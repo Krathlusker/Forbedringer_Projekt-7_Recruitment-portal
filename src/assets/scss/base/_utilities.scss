@@ -1,0 +1,71 @@
+// =============================================================================
+// LAYOUT UTILITIES
+// =============================================================================
+// Container, flex og layout utility classes.
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// =============================================================================
+// ACCESSIBILITY UTILITIES (WCAG)
+// =============================================================================
+
+// Screen reader only - visually hidden but accessible to assistive technology
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+// Skip link - skjult indtil fokus (WCAG 2.4.1 Bypass Blocks)
+// Vises øverst på siden når brugeren tabber til den
+// Styled som light button for konsistent design
+.skip-link {
+	@include button-base;
+	@include button-colors-light;
+	@include button-font;
+	position: fixed;
+	top: -100%;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 9999;
+	transition: top $transition-duration $transition-ease,
+		background-color $transition-duration $transition-ease,
+		color $transition-duration $transition-ease,
+		box-shadow $transition-duration $transition-ease;
+
+	&:focus {
+		top: $spacing-md;
+		outline: 2px solid $c-warning;
+		outline-offset: 2px;
+	}
+}
+
+// Layout utilities
+.container {
+	max-width: $max-page-width;
+	margin: 0 auto;
+	padding: 0 $spacing-lg;
+}
+
+.flex {
+	display: flex;
+
+	&--center {
+		@include flex-center;
+	}
+
+	&--between {
+		@include flex-between;
+	}
+
+	&--column {
+		@include flex-column;
+	}
+}

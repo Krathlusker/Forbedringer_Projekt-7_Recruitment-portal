@@ -1,0 +1,41 @@
+// =============================================================================
+// VIDEO.JS OVERRIDES
+// =============================================================================
+// Override video.js dynamic dimensions class (injected by video.js)
+
+@use '../abstracts/variables' as *;
+
+// Base video.js styling
+.video-js {
+	background-color: $c-primary;
+
+	// Fullscreen: center video in viewport
+	&.vjs-fullscreen {
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+
+		.vjs-tech {
+			position: relative !important;
+			top: auto !important;
+			left: auto !important;
+			max-height: 100vh;
+			max-width: 100vw;
+			object-fit: contain;
+		}
+	}
+}
+
+// VIDEO.JS OVERRIDES
+// Override video.js dynamic dimensions class (injected by video.js)
+[class*="vjs_video_"][class*="-dimensions"] {
+	width: 100% !important;
+	height: auto !important;
+	max-height: var(--video-max-height) !important;
+
+	// Fullscreen: override dimension restrictions
+	&.vjs-fullscreen {
+		max-height: 100vh !important;
+		height: 100% !important;
+	}
+}
