@@ -6,7 +6,7 @@
 		<!-- Header -->
 		<header class="landing-page__header" :class="{ 'landing-page__header--scrolled': isScrolled }" :inert="isAnyModalOpen">
 			<div class="landing-page__header-container">
-				<img src="/logo.svg" alt="SBS Friction A/S" class="landing-page__logo" width="92" height="45" />
+				<img src="/logo.svg" alt="SBS Friction A/S" class="landing-page__logo" width="92" height="45" role="button" tabindex="0" aria-label="Scroll til toppen" @click="scrollToTop" @keydown.enter="scrollToTop" />
 				<h1 class="landing-page__header-title">jobportal</h1>
 				<FloatingApplyButton @click="openApplicationModal()" />
 			</div>
@@ -217,10 +217,10 @@
 				aria-label="Scroll til toppen"
 				@click="scrollToTop"
 			>
-				<span class="scroll-to-top__label">Til toppen</span>
 				<span class="scroll-to-top__icon">
 					<GlScrollUp aria-hidden="true" />
 				</span>
+				<span class="scroll-to-top__label">Til toppen</span>
 			</button>
 		</Transition>
 	</div>
@@ -303,6 +303,13 @@ const [initBodyScrollbar, getOsInstance] = useOverlayScrollbars({
 		}
 	},
 	events: {
+		initialized(instance) {
+			// Check scroll position on init (browser restores scroll after reload)
+			const viewport = instance.elements().viewport
+			if (viewport) {
+				isScrolled.value = viewport.scrollTop > 50
+			}
+		},
 		scroll: handleScroll
 	},
 	defer: true
@@ -542,6 +549,7 @@ const closeApplicationModal = () => {
 		height: $element-height-standard;
 		width: auto;
 		transition: height $transition-duration-slow $transition-ease-smooth;
+		cursor: pointer;
 	}
 
 	&__header-title {
@@ -752,48 +760,21 @@ svg {
 	bottom: calc(#{$spacing-lg} + env(safe-area-inset-bottom, 0px));
 	right: $spacing-lg;
 	z-index: $z-index-floating-button;
-	width: $spacing-xl;
 	height: $spacing-xl;
 	border-radius: calc($spacing-xl / 2);
 	border: $border-width-normal solid $c-primary;
 	background-color: $c-bg;
 	color: $c-primary;
 	cursor: pointer;
-	display: flex;
+	display: inline-flex;
 	align-items: center;
-	overflow: hidden;
 	padding: 0;
 	box-shadow: $shadow-button;
-	transition: width 0.6s $transition-ease-smooth,
-		background-color $transition-duration $transition-ease,
+	transition: background-color $transition-duration $transition-ease,
 		color $transition-duration $transition-ease,
 		box-shadow $transition-duration $transition-ease;
 
-	&--expanded {
-		width: 10rem;
-	}
-
-	&__label {
-		@include body-font;
-		font-size: $font-size-small;
-		white-space: nowrap;
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-		text-align: center;
-		padding-left: 0;
-		opacity: 0;
-		transition: opacity 0.4s $transition-ease-smooth,
-			padding 0.6s $transition-ease-smooth;
-
-		.scroll-to-top--expanded & {
-			opacity: 1;
-			padding-left: $spacing-sm;
-		}
-	}
-
 	&__icon {
-		// Match button's content area (total size minus border on each side)
 		width: $spacing-xl - $border-width-normal * 2;
 		height: $spacing-xl - $border-width-normal * 2;
 		display: flex;
@@ -807,31 +788,47 @@ svg {
 		}
 	}
 
+	&__label {
+		@include body-font;
+		color: inherit; // Arv fra knappen (body-font sætter eksplicit $c-primary)
+		font-size: $font-size-small;
+		white-space: nowrap;
+		overflow: hidden;
+		display: inline-block;
+		max-width: 0;
+		opacity: 0;
+		padding-right: 0;
+		transition: max-width $transition-duration $transition-ease-smooth,
+			opacity $transition-duration $transition-ease-smooth,
+			padding $transition-duration $transition-ease-smooth;
+	}
+
+	&--expanded &__label {
+		max-width: 6rem;
+		opacity: 1;
+		padding-right: $spacing-sm;
+	}
+
 	@include focus-visible;
 
 	@media (hover: hover) and (pointer: fine) {
 		&:hover {
-			width: 10rem;
 			background-color: $c-primary;
 			color: $c-bg;
 			box-shadow: $shadow-button-hover;
+		}
 
-			.scroll-to-top__label {
-				opacity: 1;
-				padding-left: $spacing-sm;
-			}
+		&:hover &__label {
+			max-width: 6rem;
+			opacity: 1;
+			padding-right: $spacing-sm;
 		}
 	}
 
 	@include mobile {
 		bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom, 0px));
 		right: $spacing-md;
-		width: 2.5rem;
 		height: 2.5rem;
-
-		&--expanded {
-			width: 9rem;
-		}
 
 		&__icon {
 			width: calc(2.5rem - #{$border-width-normal} * 2);
@@ -848,13 +845,11 @@ svg {
 // Scroll to Top Transition
 .scroll-top-enter-active,
 .scroll-top-leave-active {
-	transition: opacity $transition-duration-slow $transition-ease,
-		transform $transition-duration-slow $transition-ease;
+	transition: opacity $transition-duration-slow $transition-ease;
 }
 
 .scroll-top-enter-from,
 .scroll-top-leave-to {
 	opacity: 0;
-	transform: translateY(1rem);
 }
 </style>
