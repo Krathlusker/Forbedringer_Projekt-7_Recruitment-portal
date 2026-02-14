@@ -535,7 +535,7 @@ const closeApplicationModal = () => {
 
 .el-image-card__button {
     margin: $spacing-sm;
-    width: calc($spacing-md * 8);
+    width: calc(#{$spacing-md} * 8);
 }
 
 	&__header-container {
@@ -775,8 +775,8 @@ svg {
 		box-shadow $transition-duration $transition-ease;
 
 	&__icon {
-		width: $spacing-xl - $border-width-normal * 2;
-		height: $spacing-xl - $border-width-normal * 2;
+		width: calc(#{$spacing-xl} - #{$border-width-normal} * 2);
+		height: calc(#{$spacing-xl} - #{$border-width-normal} * 2);
 		display: flex;
 		align-items: center;
 		justify-content: center;
