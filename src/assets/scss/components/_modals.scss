@@ -115,6 +115,13 @@
 		display: flex;
 		gap: $spacing-sm;
 		width: 100%;
+		position: relative;
+		z-index: 2; // Above modal box-shadow
+
+		// Override Element Plus default margin on adjacent buttons
+		.el-button + .el-button {
+			margin-left: 0;
+		}
 	}
 }
 

@@ -463,7 +463,7 @@
 ///   }
 @mixin slot-picker-date-display {
 	@include subtitle-font;
-	font-size: $font-size-date-head;
+	font-size: $font-size-medium;
 }
 
 /// VÆLG DATO knap styling.
@@ -503,7 +503,7 @@
 	@include flex-column;
 	@include flex-center;
 	gap: $spacing-xs;
-	padding: $spacing-xs $spacing-sm;
+	padding: $spacing-xs $spacing-xs;
 	border: $border-width-normal solid $c-primary;
 	border-radius: $border-radius-md;
 	cursor: pointer;
@@ -511,6 +511,11 @@
 	position: relative;
 	background-color: $c-bg;
 	-webkit-tap-highlight-color: transparent;
+
+	& svg {
+		height: 100%;
+	}
+
 
 	// Only apply hover on devices that support hover (not touch)
 	@media (hover: hover) and (pointer: fine) {
@@ -573,7 +578,10 @@
 ///   }
 @mixin slot-type-badge {
 	@include body-font;
-	padding: math.div($spacing-xs, 2) $spacing-sm;
+	display: inline-flex;
+	align-items: center;
+	gap: math.div($spacing-xs, 2);
+	padding: math.div($spacing-xs, 2) $spacing-xs;
 	border: $border-width-thin solid currentColor;
 	border-radius: $border-radius-sm;
 	color: inherit;
@@ -638,7 +646,7 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: $spacing-sm;
-	height: 74px;
+	min-height: 5.5rem; // Skalerer med font-size (var 74px)
 	padding-bottom: $spacing-sm;
 }
 
@@ -648,15 +656,16 @@
 ///     @include selected-slot;
 ///   }
 @mixin selected-slot {
+	position: relative;
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
-	padding: $spacing-xs;
+	padding: $spacing-xs $spacing-sm;
 	border: $border-width-normal solid $c-primary;
 	border-radius: $border-radius-md;
 	background-color: $c-primary;
 	color: $c-bg;
-	min-height: 52px; // Ensure consistent height for empty and filled slots
+	min-height: 4rem; // Skalerer med font-size (var 52px)
 }
 
 /// Tom valgt slot (dashed border, transparent baggrund).
@@ -712,6 +721,9 @@
 ///   }
 @mixin selected-slot-remove-btn {
 	@include button-colors-dark;
+	position: absolute;
+	bottom: $spacing-xs;
+	right: $spacing-xs;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -722,6 +734,7 @@
 	border-radius: $border-radius-sm;
 	cursor: pointer;
 	transition: all $transition-duration $transition-ease;
+	z-index: 1;
 
 	&:hover {
 		border-color: $c-bg;

@@ -26,7 +26,11 @@
 				@click="selectSlot(slot)"
 			>
 				<span class="calendar-slot-picker__slot-time">{{ slot.time }}</span>
-				<span class="calendar-slot-picker__slot-type">{{ slot.type === 'fysisk' ? 'Fysisk' : 'Virtuel' }}</span>
+				<span class="calendar-slot-picker__slot-type">
+					{{ slot.type === 'fysisk' ? 'Fysisk' : 'Virtuel' }}
+					<CaGroup v-if="slot.type === 'fysisk'" aria-hidden="true" />
+					<AkLaptopDevice v-else aria-hidden="true" />
+				</span>
 			</div>
 		</div>
 
@@ -177,6 +181,8 @@
 
 <script setup lang="ts">
 import { Calendar, ArrowLeft, ArrowRight, Delete } from '@element-plus/icons-vue'
+import { AkLaptopDevice } from '@kalimahapps/vue-icons/ak'
+import { CaGroup } from '@kalimahapps/vue-icons/ca'
 
 interface TimeSlot {
 	id: string

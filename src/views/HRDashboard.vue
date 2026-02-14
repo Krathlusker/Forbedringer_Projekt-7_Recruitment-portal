@@ -331,6 +331,8 @@
 												{{
 													selectedApplication.confirmedSlot.type === 'fysisk' ? 'Fysisk (45 min)' : 'Virtuel (60 min)'
 												}}
+												<CaGroup v-if="selectedApplication.confirmedSlot.type === 'fysisk'" aria-hidden="true" />
+												<AkLaptopDevice v-else aria-hidden="true" />
 											</span>
 										</div>
 										<div class="application-detail__slot-actions">
@@ -363,6 +365,8 @@
 											}}</span>
 											<span class="application-detail__slot-type">
 												{{ getSlotInfo(slotId)?.type === 'fysisk' ? 'Fysisk (45 min)' : 'Virtuel (60 min)' }}
+												<CaGroup v-if="getSlotInfo(slotId)?.type === 'fysisk'" aria-hidden="true" />
+												<AkLaptopDevice v-else aria-hidden="true" />
 											</span>
 										</div>
 										<div class="application-detail__slot-actions">
@@ -563,9 +567,11 @@
 												:class="getSlotStatusClass(slot)"
 											>
 												<span class="time-slot-item__time">{{ slot.time }}</span>
-												<span class="time-slot-item__type">{{
-													slot.type === 'fysisk' ? 'Fysisk (45 min)' : 'Virtuel (60 min)'
-												}}</span>
+												<span class="time-slot-item__type">
+													{{ slot.type === 'fysisk' ? 'Fysisk (45 min)' : 'Virtuel (60 min)' }}
+													<CaGroup v-if="slot.type === 'fysisk'" aria-hidden="true" />
+													<AkLaptopDevice v-else aria-hidden="true" />
+												</span>
 												<span class="time-slot-item__status">{{ getSlotStatusLabel(slot) }}</span>
 												<el-button
 													@click="removeTimeSlot(slot.id)"
@@ -696,6 +702,8 @@
 
 <script setup lang="ts">
 import { User, Message, Phone, Calendar } from '@element-plus/icons-vue'
+import { AkLaptopDevice } from '@kalimahapps/vue-icons/ak'
+import { CaGroup } from '@kalimahapps/vue-icons/ca'
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
 import { VuePDF, usePDF } from '@tato30/vue-pdf'
 import '@tato30/vue-pdf/style.css'

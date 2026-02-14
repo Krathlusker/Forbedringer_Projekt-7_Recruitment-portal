@@ -1,17 +1,18 @@
 <template>
 	<div class="landing-page">
 		<!-- Skip Link (WCAG 2.4.1) - vises kun ved keyboard focus -->
-		<a href="#main-content" class="skip-link" @click="skipToMain">Spring til hovedindhold</a>
+		<a href="#main-content" class="skip-link" :inert="isAnyModalOpen" @click="skipToMain">Spring til hovedindhold</a>
 
 		<!-- Header -->
-		<header class="landing-page__header" :class="{ 'landing-page__header--scrolled': isScrolled }">
+		<header class="landing-page__header" :class="{ 'landing-page__header--scrolled': isScrolled }" :inert="isAnyModalOpen">
 			<div class="landing-page__header-container">
 				<img src="/logo.svg" alt="SBS Friction A/S" class="landing-page__logo" width="92" height="45" />
 				<h1 class="landing-page__header-title">jobportal</h1>
+				<FloatingApplyButton @click="openApplicationModal()" />
 			</div>
 		</header>
 
-		<main id="main-content" class="landing-page__main" tabindex="-1">
+		<main id="main-content" class="landing-page__main" tabindex="-1" :inert="isAnyModalOpen">
 			<!-- Scrollbar component - always use OverlayScrollbars but defer initialization -->
 			<OverlayScrollbarsComponent
 				ref="scrollContainerRef"
@@ -206,9 +207,6 @@
 			</footer>
 		</OverlayScrollbarsComponent>
 		</main>
-
-		<!-- Floating Apply Button -->
-		<FloatingApplyButton @click="openApplicationModal()" />
 
 		<!-- Job Detail Modal -->
 		<JobModal
@@ -499,11 +497,17 @@ const closeApplicationModal = () => {
 
 		&--scrolled {
 			.landing-page__logo {
-				height: $font-size-button;
+				height: $font-size-date-head;
 			}
 
 			.landing-page__header-title {
-				font-size: $font-size-button;
+				font-size: $font-size-date-head;
+			}
+
+			:deep(.floating-apply-button) {
+				@include desktop {
+					transform: scale(0.85) !important;
+				}
 			}
 		}
 	}

@@ -125,6 +125,8 @@ const videoOptions = computed(() => ({
 	responsive: true,
 	// Language
 	language: 'da',
+	// Playback speed options
+	playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
 	// Control bar config
 	controlBar: {
 		volumePanel: {
@@ -138,12 +140,64 @@ const videoOptions = computed(() => ({
 			'timeDivider',
 			'durationDisplay',
 			'progressControl',
+			'playbackRateMenuButton',
 			'fullscreenToggle'
 		]
 	},
 	// User activity timeout (hide controls)
 	inactivityTimeout: 2000
 }))
+
+// Touch scrub tooltip for iOS Safari.
+// Video.js doesn't create .vjs-mouse-display on touch devices,
+// so we create our own tooltip element and position it manually.
+// We use capture phase to ensure our listener fires before Video.js handlers.
+const setupTouchTooltip = (p: Player) => {
+	const progressControl = p.el().querySelector('.vjs-progress-control') as HTMLElement | null
+	const progressHolder = p.el().querySelector('.vjs-progress-holder') as HTMLElement | null
+	if (!progressControl || !progressHolder) return
+
+	// Only activate on touch devices
+	if (!('ontouchstart' in window)) return
+
+	// Create custom tooltip element inside the holder (for positioning context)
+	const tip = document.createElement('div')
+	tip.className = 'vjs-touch-tooltip'
+	tip.setAttribute('aria-hidden', 'true')
+	tip.style.display = 'none'
+	progressHolder.appendChild(tip)
+
+	const formatTime = (seconds: number): string => {
+		const m = Math.floor(seconds / 60)
+		const s = Math.floor(seconds % 60)
+		return `${m}:${s.toString().padStart(2, '0')}`
+	}
+
+	const show = (touch: Touch) => {
+		const rect = progressHolder.getBoundingClientRect()
+		const fraction = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width))
+		const time = fraction * (p.duration() || 0)
+		tip.textContent = formatTime(time)
+		tip.style.left = `${fraction * 100}%`
+		tip.style.display = ''
+	}
+
+	const hide = () => {
+		tip.style.display = 'none'
+	}
+
+	// Use capture phase to fire before Video.js internal handlers
+	progressControl.addEventListener('touchstart', (e) => {
+		if (e.touches.length === 1) show(e.touches[0])
+	}, { passive: true, capture: true })
+
+	progressControl.addEventListener('touchmove', (e) => {
+		if (e.touches.length === 1) show(e.touches[0])
+	}, { passive: true, capture: true })
+
+	progressControl.addEventListener('touchend', hide, { passive: true, capture: true })
+	progressControl.addEventListener('touchcancel', hide, { passive: true, capture: true })
+}
 
 // Event handlers
 const onPlayerMounted = (payload: { video: HTMLVideoElement; player: Player; state: VideoPlayerState }) => {
@@ -158,6 +212,9 @@ const onPlayerMounted = (payload: { video: HTMLVideoElement; player: Player; sta
 	payload.player.on('userinactive', () => {
 		containerRef.value?.classList.remove('video-player-v2--controls-visible')
 	})
+
+	// Touch-to-mouse forwarding on progress bar — makes tooltip visible on iOS Safari
+	setupTouchTooltip(payload.player)
 
 	emit('mounted', payload.player)
 }

@@ -52,13 +52,29 @@
 	cursor: pointer;
 }
 
-// Hover effect - lift up like cards
-.el-step.is-simple:hover .el-step__icon {
-	transform: translateY(-4px);
+// Active/process step - underline
+.el-step.is-simple .el-step__title.is-process {
+	text-decoration: underline;
+	text-underline-offset: $spacing-xs;
+	text-decoration-thickness: $border-width-normal;
 }
 
-.el-step.is-simple:hover .el-step__title {
-	transform: translateY(-4px);
+// Hover effect - lift up like cards (only on accessible steps, only on devices with hover)
+@media (hover: hover) and (pointer: fine) {
+	.el-step.is-simple:not(.is-wait):hover .el-step__icon {
+		transform: translateY(-4px);
+	}
+
+	.el-step.is-simple:not(.is-wait):hover .el-step__title {
+		transform: translateY(-4px);
+	}
+}
+
+// Wait state - disable interaction
+.el-step.is-simple.is-wait .el-step__icon,
+.el-step.is-simple.is-wait .el-step__title {
+	cursor: default;
+	opacity: 0.5;
 }
 
 // Focus styling for keyboard navigation - only on title

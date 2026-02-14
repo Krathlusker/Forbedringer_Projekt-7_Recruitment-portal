@@ -200,11 +200,17 @@ watch(dialogVisible, (newVal) => {
 		// Keyboard navigation: save focus and setup listeners
 		previousActiveElement = document.activeElement as HTMLElement
 		document.addEventListener('keydown', handleKeydown, true)
-		document.addEventListener('keydown', handleFocusTrap)
 		// Focus first interactive element after modal renders
 		nextTick(() => {
-			const firstButton = document.querySelector('.job-modal__cta-btn') as HTMLElement
-			if (firstButton) firstButton.focus()
+			setTimeout(() => {
+				const container = document.querySelector('.modal-wrapper__container[aria-labelledby="job-modal-title"]') as HTMLElement
+				if (container) {
+					const firstFocusable = container.querySelector<HTMLElement>(
+						'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+					)
+					if (firstFocusable) firstFocusable.focus()
+				}
+			}, 50)
 		})
 	} else {
 		document.body.style.overflow = ''
@@ -212,7 +218,6 @@ watch(dialogVisible, (newVal) => {
 		document.documentElement.style.setProperty('--scrollbar-width', '0px')
 		// Keyboard navigation: cleanup and restore focus
 		document.removeEventListener('keydown', handleKeydown, true)
-		document.removeEventListener('keydown', handleFocusTrap)
 		if (previousActiveElement) {
 			previousActiveElement.focus()
 		}
@@ -238,40 +243,9 @@ const handleKeydown = (event: KeyboardEvent) => {
 	}
 }
 
-// Focus trap handler - keeps focus inside modal
-const handleFocusTrap = (event: KeyboardEvent) => {
-	if (event.key !== 'Tab' || !dialogVisible.value) return
-
-	const modal = document.querySelector('.modal-wrapper__container[aria-labelledby="job-modal-title"]') as HTMLElement
-	if (!modal) return
-
-	const focusableElements = modal.querySelectorAll<HTMLElement>(
-		'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), video'
-	)
-	if (focusableElements.length === 0) return
-
-	const firstElement = focusableElements[0]
-	const lastElement = focusableElements[focusableElements.length - 1]
-
-	if (event.shiftKey) {
-		// Shift+Tab: hvis på første element, gå til sidste
-		if (document.activeElement === firstElement) {
-			event.preventDefault()
-			lastElement.focus()
-		}
-	} else {
-		// Tab: hvis på sidste element, gå til første
-		if (document.activeElement === lastElement) {
-			event.preventDefault()
-			firstElement.focus()
-		}
-	}
-}
-
 // Cleanup on unmount
 onUnmounted(() => {
 	document.removeEventListener('keydown', handleKeydown, true)
-	document.removeEventListener('keydown', handleFocusTrap)
 })
 </script>
 

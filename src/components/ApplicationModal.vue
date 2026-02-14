@@ -113,7 +113,6 @@
 											<div class="application-modal__cv-toggle">
 												<span class="application-modal__cv-label">Vedhæft CV?</span>
 												<el-switch v-model="formData.hasCV" />
-												<span class="application-modal__cv-hint">{{ formData.hasCV ? 'Ja' : 'Nej' }}</span>
 											</div>
 
 											<div
@@ -146,7 +145,7 @@
 
 								<!-- Step 2: DISC Quiz -->
 								<div v-else-if="currentStep === 2" class="application-modal__step application-modal__step--quiz">
-									<h2 class="application-modal__title">Quiz</h2>
+									<h2 class="application-modal__title">Quiz om dig</h2>
 
 									<!-- Progress bar -->
 									<div class="application-modal__quiz-progress">
@@ -226,9 +225,11 @@
 													@keydown.space.prevent="toggleSlot(slot)"
 												>
 													<span class="application-modal__slot-time">{{ slot.time }}</span>
-													<span class="application-modal__slot-type">{{
-														slot.type === 'fysisk' ? 'Fysisk' : 'Virtuel'
-													}}</span>
+													<span class="application-modal__slot-type">
+														{{ slot.type === 'fysisk' ? 'Fysisk' : 'Virtuel' }}
+														<CaGroup v-if="slot.type === 'fysisk'" aria-hidden="true" />
+														<AkLaptopDevice v-else aria-hidden="true" />
+													</span>
 												</div>
 											</div>
 
@@ -263,9 +264,11 @@
 																	formatShortDate(getSlotById(selectedSlots[index])?.date || '')
 																}}</span>
 															</div>
-															<span class="application-modal__selected-slot-type">{{
-																getSlotById(selectedSlots[index])?.type === 'fysisk' ? 'Fysisk' : 'Virtuel'
-															}}</span>
+															<span class="application-modal__selected-slot-type">
+																{{ getSlotById(selectedSlots[index])?.type === 'fysisk' ? 'Fysisk' : 'Virtuel' }}
+																<CaGroup v-if="getSlotById(selectedSlots[index])?.type === 'fysisk'" aria-hidden="true" />
+																<AkLaptopDevice v-else aria-hidden="true" />
+															</span>
 														</div>
 														<el-button
 															class="application-modal__selected-slot-remove"
@@ -369,7 +372,6 @@
 					<el-button
 						type="warning"
 						@click="nextStep"
-						:disabled="!canProceed"
 						class="modal-nav-btn modal-nav-btn--next"
 					>
 						<span class="modal-nav-btn__arrows">
@@ -389,7 +391,7 @@
 							<el-icon class="modal-nav-btn__arrow modal-nav-btn__arrow--1"><ArrowLeft /></el-icon>
 						</span>
 					</el-button>
-					<el-button type="warning" @click="handleSubmit" :disabled="!consentAccepted" class="modal-nav-btn">
+					<el-button type="warning" @click="handleSubmit" class="modal-nav-btn">
 						<el-icon><Message /></el-icon>
 						<span>Send</span>
 					</el-button>
@@ -486,6 +488,8 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormRules, UploadFile, UploadRawFile, UploadInstance } from 'element-plus'
+import { AkLaptopDevice } from '@kalimahapps/vue-icons/ak'
+import { CaGroup } from '@kalimahapps/vue-icons/ca'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import ConsentModal from '@/components/ConsentModal.vue'
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
@@ -786,12 +790,12 @@ watch(
 			// Setup step titles efter DOM er renderet
 			nextTick(() => {
 				setupStepTitleAccessibility()
-				// Tilføj focus trap listener
-				document.addEventListener('keydown', handleModalFocusTrap)
+				// Tilføj ESC listener
+				document.addEventListener('keydown', handleModalKeydown)
 			})
 		} else {
-			// Modal lukker - fjern focus trap og returner fokus
-			document.removeEventListener('keydown', handleModalFocusTrap)
+			// Modal lukker - fjern ESC listener og returner fokus
+			document.removeEventListener('keydown', handleModalKeydown)
 			if (modalPreviousActiveElement) {
 				modalPreviousActiveElement.focus()
 			}
@@ -799,12 +803,11 @@ watch(
 	}
 )
 
-// Focus trap for main application modal
-const handleModalFocusTrap = (event: KeyboardEvent) => {
+// ESC handler for application modal
+const handleModalKeydown = (event: KeyboardEvent) => {
 	if (!dialogVisible.value) return
 	// Ignorer hvis calendar modal eller consent modal er åben (de har deres egne handlers)
 	if (calendarModalVisible.value) return
-	// Tjek om consent modal er åben (den teleporteres til body)
 	const consentModalOpen = document.querySelector('body > .consent-modal-wrapper')
 	if (consentModalOpen) return
 
@@ -813,51 +816,6 @@ const handleModalFocusTrap = (event: KeyboardEvent) => {
 		event.preventDefault()
 		event.stopPropagation()
 		handleClose()
-		return
-	}
-
-	if (event.key === 'Tab') {
-		// Brug container i stedet for modal for at inkludere navigation buttons
-		const container = document.querySelector('.modal-wrapper__container') as HTMLElement
-		if (!container) return
-
-		// Find alle fokusbare elementer i containeren (inkl. nav buttons)
-		const focusableSelectors = [
-			'button:not([disabled]):not([tabindex="-1"])',
-			'input:not([disabled]):not([tabindex="-1"])',
-			'select:not([disabled]):not([tabindex="-1"])',
-			'textarea:not([disabled]):not([tabindex="-1"])',
-			'[tabindex="0"]',
-			'a[href]'
-		].join(', ')
-
-		const focusableElements = Array.from(container.querySelectorAll(focusableSelectors)) as HTMLElement[]
-		// Filtrer elementer der ikke er synlige
-		const visibleElements = focusableElements.filter(el => {
-			const rect = el.getBoundingClientRect()
-			return rect.width > 0 && rect.height > 0
-		})
-
-		if (visibleElements.length === 0) return
-
-		const firstElement = visibleElements[0]
-		const lastElement = visibleElements[visibleElements.length - 1]
-
-		// Shift+Tab fra første element → gå til sidste
-		if (event.shiftKey && document.activeElement === firstElement) {
-			event.preventDefault()
-			lastElement.focus()
-		}
-		// Tab fra sidste element → gå til første
-		else if (!event.shiftKey && document.activeElement === lastElement) {
-			event.preventDefault()
-			firstElement.focus()
-		}
-		// Hvis fokus er uden for containeren, flyt det ind
-		else if (!container.contains(document.activeElement)) {
-			event.preventDefault()
-			firstElement.focus()
-		}
 	}
 }
 
@@ -865,7 +823,7 @@ onUnmounted(() => {
 	stopPolling()
 	window.removeEventListener('beforeunload', handleBeforeUnload)
 	document.removeEventListener('keydown', handleGlobalKeydown)
-	document.removeEventListener('keydown', handleModalFocusTrap)
+	document.removeEventListener('keydown', handleModalKeydown)
 	releaseAllReservations()
 })
 
@@ -937,20 +895,6 @@ watch(
 		}
 	}
 )
-
-// Computed: Can proceed to next step
-const canProceed = computed(() => {
-	if (currentStep.value === 1) {
-		return formData.value.fullName && formData.value.phone && formData.value.email && formData.value.age && formData.value.jobPosition
-	}
-	if (currentStep.value === 2) {
-		return discAnswers.value[currentQuestion.value] !== undefined
-	}
-	if (currentStep.value === 3) {
-		return selectedSlots.value.length === 2
-	}
-	return true
-})
 
 // Get selected option value (index) for el-radio-group
 const getSelectedOptionValue = (questionId: number): number | undefined => {
@@ -1646,10 +1590,18 @@ const nextStep = async () => {
 	if (currentStep.value === 1) {
 		// Validate form
 		const valid = await personalFormRef.value?.validate().catch(() => false)
-		if (!valid) return
+		if (!valid) {
+			ElMessage.warning({ message: 'Udfyld venligst alle påkrævede felter før du fortsætter.', duration: 5000 })
+			return
+		}
 		currentStep.value = 2
 		highestStepReached.value = Math.max(highestStepReached.value, 2)
 	} else if (currentStep.value === 2) {
+		// Check if current question is answered
+		if (discAnswers.value[currentQuestion.value] === undefined) {
+			ElMessage.warning({ message: 'Vælg venligst et svar før du fortsætter.', duration: 5000 })
+			return
+		}
 		// Handle quiz navigation
 		if (currentQuestion.value < discQuestions.length - 1) {
 			currentQuestion.value++
@@ -1668,6 +1620,11 @@ const nextStep = async () => {
 			}
 		}
 	} else if (currentStep.value === 3) {
+		// Check if 2 slots are selected
+		if (selectedSlots.value.length < 2) {
+			ElMessage.warning({ message: 'Vælg venligst 2 samtaletider før du fortsætter.', duration: 5000 })
+			return
+		}
 		// Go to Send confirmation step
 		// Polling stops automatically via watch on currentStep
 		currentStep.value = 4
@@ -1683,8 +1640,10 @@ const getStepStatus = (stepId: number): 'wait' | 'process' | 'finish' => {
 	if (currentStep.value >= 5) return 'finish'
 	// Current step is in process
 	if (stepId === currentStep.value) return 'process'
-	// Steps already completed (based on highest reached)
-	if (stepId < highestStepReached.value) return 'finish'
+	// Steps already passed AND actually completed show as finish
+	if (stepId < currentStep.value && isStepCompleted(stepId)) return 'finish'
+	// Steps visited before but not completed (e.g. navigated back)
+	if (stepId < currentStep.value) return 'process'
 	// Steps not yet reached
 	return 'wait'
 }
@@ -1729,13 +1688,39 @@ const previousStep = () => {
 }
 
 // Go to specific step
-const goToStep = (stepId: number) => {
+const goToStep = async (stepId: number) => {
 	// Don't allow navigation on success/fail steps
 	if (currentStep.value >= 5) return
 	// Don't allow going to steps that haven't been reached yet
 	if (stepId > highestStepReached.value) return
 	// Don't go to the same step
 	if (stepId === currentStep.value) return
+
+	// Validate all intermediate steps when navigating forward
+	if (stepId > currentStep.value) {
+		// Validate step 1 (personal info) if jumping past it
+		if (currentStep.value <= 1 && stepId > 1) {
+			const valid = await personalFormRef.value?.validate().catch(() => false)
+			if (!valid) {
+				ElMessage.warning({ message: 'Udfyld venligst alle påkrævede felter før du fortsætter.', duration: 5000 })
+				return
+			}
+		}
+		// Validate step 2 (quiz) if jumping past it
+		if (currentStep.value <= 2 && stepId > 2) {
+			if (!isStepCompleted(2)) {
+				ElMessage.warning({ message: 'Gennemfør venligst quizzen før du fortsætter.', duration: 5000 })
+				return
+			}
+		}
+		// Validate step 3 (date selection) if jumping past it
+		if (currentStep.value <= 3 && stepId > 3) {
+			if (!isStepCompleted(3)) {
+				ElMessage.warning({ message: 'Vælg venligst samtaletider før du fortsætter.', duration: 5000 })
+				return
+			}
+		}
+	}
 
 	// Stop polling if leaving step 3
 	if (currentStep.value === 3 && stepId !== 3) {
@@ -1760,6 +1745,10 @@ const goToStep = (stepId: number) => {
 
 // Handle form submission
 const handleSubmit = async () => {
+	if (!consentAccepted.value) {
+		ElMessage.warning({ message: 'Du skal acceptere samtykkeerklæringen før du kan sende din ansøgning.', duration: 5000 })
+		return
+	}
 	await submitApplication()
 	slideDirection.value = 'slide-left'
 
@@ -1847,7 +1836,7 @@ const handleClose = async () => {
 
 	&__cv-row {
 		display: flex;
-		gap: $spacing-md;
+		gap: $spacing-sm;
 		justify-content: flex-start;
 		align-items: center;
 		height: 32px;
@@ -1881,7 +1870,7 @@ const handleClose = async () => {
 			background-color: transparent;
 			transition: all $transition-duration $transition-ease;
 			cursor: pointer;
-			padding: 0 $spacing-sm;
+			padding: 0 $spacing-xs;
 			text-align: center;
 
 			&:hover {
@@ -1938,6 +1927,7 @@ const handleClose = async () => {
 
 	&__cv-label {
 		@include body-font;
+		text-wrap-mode: nowrap;
 	}
 
 	&__cv-hint {
@@ -2022,6 +2012,19 @@ const handleClose = async () => {
 
 		:deep(.el-radio__inner) {
 			transition: all $transition-duration $transition-ease;
+			border-color: $color-dark-gray !important;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			// Centreret prik ved valgt tilstand
+			&::after {
+				position: static;
+				margin: 0;
+				width: 6px;
+				height: 6px;
+				transform: none;
+			}
 		}
 
 		:deep(.el-radio__label) {

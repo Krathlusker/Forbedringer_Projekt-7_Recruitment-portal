@@ -130,43 +130,18 @@ const handleKeydown = (event: KeyboardEvent) => {
 	}
 }
 
-// Focus trap handler
-const handleFocusTrap = (event: KeyboardEvent) => {
-	if (event.key !== 'Tab' || !modalVisible.value) return
-
-	const modal = document.querySelector('.consent-modal-wrapper__container') as HTMLElement
-	if (!modal) return
-
-	const focusableElements = modal.querySelectorAll<HTMLElement>(
-		'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-	)
-	if (focusableElements.length === 0) return
-
-	const firstElement = focusableElements[0]
-	const lastElement = focusableElements[focusableElements.length - 1]
-
-	if (event.shiftKey) {
-		// Shift+Tab: hvis på første element, gå til sidste
-		if (document.activeElement === firstElement) {
-			event.preventDefault()
-			lastElement.focus()
-		}
-	} else {
-		// Tab: hvis på sidste element, gå til første
-		if (document.activeElement === lastElement) {
-			event.preventDefault()
-			firstElement.focus()
-		}
-	}
-}
-
 // Watch for modal visibility changes
 watch(modalVisible, (newVal) => {
+	// Sæt inert på ApplicationModal bagved (forhindrer tab/interaktion)
+	const appModalContainer = document.querySelector('.modal-wrapper__container') as HTMLElement
+	if (appModalContainer) {
+		appModalContainer.inert = newVal
+	}
+
 	if (newVal) {
 		// Modal opens - save focus and setup listeners
 		previousActiveElement = document.activeElement as HTMLElement
 		document.addEventListener('keydown', handleKeydown, true) // capture phase for ESC
-		document.addEventListener('keydown', handleFocusTrap)
 		// Focus first button after modal renders
 		nextTick(() => {
 			const firstButton = document.querySelector('.consent-modal-wrapper .modal-nav-btn') as HTMLElement
@@ -175,7 +150,6 @@ watch(modalVisible, (newVal) => {
 	} else {
 		// Modal closes - cleanup and restore focus
 		document.removeEventListener('keydown', handleKeydown, true)
-		document.removeEventListener('keydown', handleFocusTrap)
 		if (previousActiveElement) {
 			previousActiveElement.focus()
 		}
@@ -185,7 +159,11 @@ watch(modalVisible, (newVal) => {
 // Cleanup on unmount
 onUnmounted(() => {
 	document.removeEventListener('keydown', handleKeydown, true)
-	document.removeEventListener('keydown', handleFocusTrap)
+	// Fjern inert fra ApplicationModal hvis consent modal unmountes mens åben
+	const appModalContainer = document.querySelector('.modal-wrapper__container') as HTMLElement
+	if (appModalContainer) {
+		appModalContainer.inert = false
+	}
 })
 </script>
 
@@ -202,11 +180,12 @@ onUnmounted(() => {
 		flex-shrink: 0; // Prevent checkbox from shrinking
 	}
 
-	// Make checkbox larger
+	// Make checkbox larger + contrast border
 	:deep(.el-checkbox__inner) {
 		width: 20px;
 		height: 20px;
 		border-radius: $border-radius-xs;
+		border-color: $color-dark-gray !important;
 
 		&::after {
 			// Adjust checkmark for larger checkbox

@@ -8,6 +8,9 @@
 
 // Base styles
 html {
+	// Root font-size i px definerer hvad 1rem = (16px).
+	// Alle andre font-sizes bruger rem, så brugere kan skalere
+	// tekst via browser-indstillinger (WCAG 1.4.4 Resize Text).
 	font-size: 16px;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
