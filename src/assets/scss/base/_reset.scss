@@ -13,15 +13,8 @@
 	padding: 0;
 }
 
-html,
-body {
-	margin: 0;
-	padding: 0;
-	min-height: 100vh;
-}
-
-#app {
-	min-height: 100vh;
+html {
+	background-color: #ffffff; // Match --el-bg-color — extends behind iOS safe areas
 }
 
 // Prevent layout shift when modal opens and body scroll is disabled

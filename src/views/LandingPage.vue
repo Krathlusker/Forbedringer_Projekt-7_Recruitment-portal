@@ -12,21 +12,7 @@
 			</div>
 		</header>
 
-		<main id="main-content" class="landing-page__main" tabindex="-1" :inert="isAnyModalOpen">
-			<!-- Scrollbar component - always use OverlayScrollbars but defer initialization -->
-			<OverlayScrollbarsComponent
-				ref="scrollContainerRef"
-				class="landing-page__scrollable"
-				:options="{
-					scrollbars: {
-						theme: 'os-theme-dark',
-						autoHide: 'scroll',
-						autoHideDelay: 1000
-					}
-				}"
-				:defer="true"
-				@osScroll="handleScroll"
-			>
+		<main id="main-content" tabindex="-1" :inert="isAnyModalOpen">
 			<!-- Hero Section -->
 			<section class="landing-page__hero" aria-label="Introduktionsvideo">
 				<div class="landing-page__hero-content">
@@ -205,7 +191,6 @@
 					</div>
 				</div>
 			</footer>
-		</OverlayScrollbarsComponent>
 		</main>
 
 		<!-- Job Detail Modal -->
@@ -222,11 +207,27 @@
 			:selected-job="selectedJob"
 			@close="closeApplicationModal"
 		/>
+
+		<!-- Scroll to Top Button -->
+		<Transition name="scroll-top">
+			<button
+				v-show="isScrolled"
+				class="scroll-to-top"
+				:class="{ 'scroll-to-top--expanded': showScrollLabel }"
+				aria-label="Scroll til toppen"
+				@click="scrollToTop"
+			>
+				<span class="scroll-to-top__label">Til toppen</span>
+				<span class="scroll-to-top__icon">
+					<GlScrollUp aria-hidden="true" />
+				</span>
+			</button>
+		</Transition>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
+import { useOverlayScrollbars } from 'overlayscrollbars-vue'
 // Icons imported from specific sub-paths for tree-shaking
 import { AkLinkedInFill, AkInstagramFill } from '@kalimahapps/vue-icons/ak'
 import { BsYoutube } from '@kalimahapps/vue-icons/bs'
@@ -238,6 +239,7 @@ import { PhIsland } from '@kalimahapps/vue-icons/ph'
 import { TaOutlineMassage } from '@kalimahapps/vue-icons/ta'
 import { FlFood } from '@kalimahapps/vue-icons/fl'
 import { CaFruitBowl } from '@kalimahapps/vue-icons/ca'
+import { GlScrollUp } from '@kalimahapps/vue-icons/gl'
 import {
 	Location,
 	Phone,
@@ -253,27 +255,13 @@ import type { JobPosition } from '@/types'
 // Video player ref
 const heroVideoRef = ref<InstanceType<typeof VideoPlayerV2> | null>(null)
 
-// Scrollbar ref for skip link functionality
-const scrollContainerRef = ref<InstanceType<typeof OverlayScrollbarsComponent> | null>(null)
-
-// Skip to main content (WCAG 2.4.1)
-const skipToMain = (e: Event) => {
-	e.preventDefault()
-	const mainContent = document.getElementById('main-content')
-	const osInstance = scrollContainerRef.value?.osInstance()
-	const viewport = osInstance?.elements().viewport
-
-	if (viewport) {
-		viewport.scrollTo({ top: 0, behavior: 'smooth' })
-	}
-	mainContent?.focus()
-}
-
-// Scroll state
+// Scroll state (defined before composable so handleScroll is available)
 const isScrolled = ref(false)
+const showScrollLabel = ref(false)
 let lastScrollY = 0
 let isAutoScrolling = false
 let scrollTimeout: number | null = null
+let scrollLabelTimeout: number | null = null
 
 const handleScroll = (instance: any) => {
 	const viewport = instance.elements().viewport
@@ -305,6 +293,59 @@ const handleScroll = (instance: any) => {
 	lastScrollY = scrollY
 }
 
+// OverlayScrollbars on body — native body scroll lets iOS Safari shrink address bar
+const [initBodyScrollbar, getOsInstance] = useOverlayScrollbars({
+	options: {
+		scrollbars: {
+			theme: 'os-theme-dark',
+			autoHide: 'scroll',
+			autoHideDelay: 1000
+		}
+	},
+	events: {
+		scroll: handleScroll
+	},
+	defer: true
+})
+
+// Scroll to top
+const scrollToTop = () => {
+	const inst = getOsInstance()
+	const viewport = inst?.elements().viewport
+	if (viewport) {
+		viewport.scrollTo({ top: 0, behavior: 'smooth' })
+	}
+}
+
+// Skip to main content (WCAG 2.4.1)
+const skipToMain = (e: Event) => {
+	e.preventDefault()
+	const mainContent = document.getElementById('main-content')
+	const inst = getOsInstance()
+	const viewport = inst?.elements().viewport
+
+	if (viewport) {
+		viewport.scrollTo({ top: 0, behavior: 'smooth' })
+	}
+	mainContent?.focus()
+}
+
+// Show "Til toppen" label for 5s when scroll-to-top button appears
+watch(isScrolled, (newVal) => {
+	if (scrollLabelTimeout) {
+		clearTimeout(scrollLabelTimeout)
+		scrollLabelTimeout = null
+	}
+	if (newVal) {
+		showScrollLabel.value = true
+		scrollLabelTimeout = window.setTimeout(() => {
+			showScrollLabel.value = false
+		}, 5000)
+	} else {
+		showScrollLabel.value = false
+	}
+})
+
 const handleWheel = (e: WheelEvent) => {
 	// Blokér scroll op mens vi auto-scroller, men tillad scroll ned
 	if (isAutoScrolling && e.deltaY < 0) {
@@ -313,17 +354,14 @@ const handleWheel = (e: WheelEvent) => {
 }
 
 onMounted(() => {
-	// Window scroll listeners not needed when using OverlayScrollbars
+	initBodyScrollbar(document.body)
 	window.addEventListener('wheel', handleWheel, { passive: false })
 })
 
 onUnmounted(() => {
 	window.removeEventListener('wheel', handleWheel)
-	if (scrollTimeout) {
-		clearTimeout(scrollTimeout)
-	}
-	// Ensure body scroll is restored on unmount
-	document.body.style.overflow = ''
+	if (scrollTimeout) clearTimeout(scrollTimeout)
+	if (scrollLabelTimeout) clearTimeout(scrollLabelTimeout)
 })
 
 // Modal states
@@ -337,13 +375,18 @@ const isAnyModalOpen = computed(() => showJobModal.value || showApplicationModal
 
 // Lock background scroll when modal is open
 watch(isAnyModalOpen, (isOpen) => {
+	const inst = getOsInstance()
 	if (isOpen) {
 		heroVideoRef.value?.pause()
-		// Lock scroll on body to prevent background scrolling
-		document.body.style.overflow = 'hidden'
+		// Disable body scroll via OverlayScrollbars overflow option
+		if (inst) {
+			inst.options({ overflow: { y: 'hidden' } })
+		}
 	} else {
-		// Restore scroll when modal closes
-		document.body.style.overflow = ''
+		// Restore body scroll
+		if (inst) {
+			inst.options({ overflow: { y: 'scroll' } })
+		}
 	}
 })
 
@@ -455,45 +498,16 @@ const closeApplicationModal = () => {
 
 <style lang="scss" scoped>
 .landing-page {
-	min-height: 100vh;
-	height: 100vh;
 	background-color: $c-bg;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
 
-	// Main content wrapper
-	&__main {
-		flex: 1;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
-
-	&__scrollable {
-		flex: 1;
-		overflow: hidden;
-		overflow-y: scroll; // Fallback before OverlayScrollbars loads
-
-		// Hide native scrollbar - OverlayScrollbars will replace it
-		scrollbar-width: none; // Firefox
-		-ms-overflow-style: none; // IE/Edge
-		&::-webkit-scrollbar {
-			display: none; // Chrome/Safari
-		}
-
-		// Optimize paint performance
-		contain: strict;
-		content-visibility: auto;
-	}
-
-	// Header
+	// Header — sticky so it stays visible during body scroll
 	&__header {
 		background-color: $c-bg;
 		border-bottom: $border-width-thin solid $c-fill-light;
 		z-index: $z-index-header;
 		transition: all $transition-duration-slow $transition-ease-smooth;
-		flex-shrink: 0;
+		position: sticky;
+		top: 0;
 
 		&--scrolled {
 			.landing-page__logo {
@@ -676,7 +690,7 @@ const closeApplicationModal = () => {
 	&__footer {
 		background-color: $c-primary;
 		color: $c-bg;
-		padding: $spacing-lg $spacing-md $spacing-xl;
+		padding: $spacing-lg $spacing-md calc(#{$spacing-xl} + env(safe-area-inset-bottom, 0px));
 	}
 
 	&__footer-container {
@@ -730,5 +744,117 @@ const closeApplicationModal = () => {
 svg {
   stroke-linejoin: round;  /* Runder hjørner hvor linjer mødes */
   stroke-linecap: round;   /* Runder enden af linjer */
+}
+
+// Scroll to Top Button
+.scroll-to-top {
+	position: fixed;
+	bottom: calc(#{$spacing-lg} + env(safe-area-inset-bottom, 0px));
+	right: $spacing-lg;
+	z-index: $z-index-floating-button;
+	width: $spacing-xl;
+	height: $spacing-xl;
+	border-radius: calc($spacing-xl / 2);
+	border: $border-width-normal solid $c-primary;
+	background-color: $c-bg;
+	color: $c-primary;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	overflow: hidden;
+	padding: 0;
+	box-shadow: $shadow-button;
+	transition: width 0.6s $transition-ease-smooth,
+		background-color $transition-duration $transition-ease,
+		color $transition-duration $transition-ease,
+		box-shadow $transition-duration $transition-ease;
+
+	&--expanded {
+		width: 10rem;
+	}
+
+	&__label {
+		@include body-font;
+		font-size: $font-size-small;
+		white-space: nowrap;
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-align: center;
+		padding-left: 0;
+		opacity: 0;
+		transition: opacity 0.4s $transition-ease-smooth,
+			padding 0.6s $transition-ease-smooth;
+
+		.scroll-to-top--expanded & {
+			opacity: 1;
+			padding-left: $spacing-sm;
+		}
+	}
+
+	&__icon {
+		// Match button's content area (total size minus border on each side)
+		width: $spacing-xl - $border-width-normal * 2;
+		height: $spacing-xl - $border-width-normal * 2;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+
+		svg {
+			width: 1.5rem;
+			height: 1.5rem;
+		}
+	}
+
+	@include focus-visible;
+
+	@media (hover: hover) and (pointer: fine) {
+		&:hover {
+			width: 10rem;
+			background-color: $c-primary;
+			color: $c-bg;
+			box-shadow: $shadow-button-hover;
+
+			.scroll-to-top__label {
+				opacity: 1;
+				padding-left: $spacing-sm;
+			}
+		}
+	}
+
+	@include mobile {
+		bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom, 0px));
+		right: $spacing-md;
+		width: 2.5rem;
+		height: 2.5rem;
+
+		&--expanded {
+			width: 9rem;
+		}
+
+		&__icon {
+			width: calc(2.5rem - #{$border-width-normal} * 2);
+			height: calc(2.5rem - #{$border-width-normal} * 2);
+		}
+
+		svg {
+			width: 1.25rem;
+			height: 1.25rem;
+		}
+	}
+}
+
+// Scroll to Top Transition
+.scroll-top-enter-active,
+.scroll-top-leave-active {
+	transition: opacity $transition-duration-slow $transition-ease,
+		transform $transition-duration-slow $transition-ease;
+}
+
+.scroll-top-enter-from,
+.scroll-top-leave-to {
+	opacity: 0;
+	transform: translateY(1rem);
 }
 </style>
