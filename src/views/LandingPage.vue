@@ -550,6 +550,8 @@ const closeApplicationModal = () => {
 		width: auto;
 		transition: height $transition-duration-slow $transition-ease-smooth;
 		cursor: pointer;
+		border-radius: $border-radius-sm;
+		@include focus-visible;
 	}
 
 	&__header-title {

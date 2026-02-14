@@ -367,6 +367,11 @@ $video-handle-size: $spacing-sm + 2px;
 		// Show menu when Video.js sets lock-showing (keyboard Enter/click)
 		.vjs-menu.vjs-lock-showing {
 			display: block !important;
+
+			.vjs-menu-content {
+				opacity: 1;
+				visibility: visible;
+			}
 		}
 
 		// Menu popup
@@ -383,6 +388,10 @@ $video-handle-size: $spacing-sm + 2px;
 				max-height: none;
 				overflow: visible;
 				width: fit-content;
+				opacity: 0;
+				visibility: hidden;
+				transition: opacity $transition-duration $transition-ease,
+					visibility $transition-duration $transition-ease;
 
 				// Bridge the gap between menu and button so hover isn't lost
 				&::after {
