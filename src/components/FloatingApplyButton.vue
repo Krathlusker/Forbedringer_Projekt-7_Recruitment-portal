@@ -207,10 +207,5 @@ onUnmounted(() => {
 		background-color: color-mix(in srgb, var(--el-color-danger), var(--el-bg-color) var(--drag-ratio, 0%)) !important;
 		color: color-mix(in srgb, var(--el-bg-color), var(--el-color-danger) var(--drag-ratio, 0%)) !important;
 	}
-
-	// Hint-nudge: kort padding-puls via JS (bruger --drag-pad-extra)
-	&.is-nudging:not(.is-dragging) {
-		// reserveret til evt. fremtidig styling
-	}
 }
 </style>
